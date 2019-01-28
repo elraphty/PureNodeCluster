@@ -6,6 +6,8 @@
 
  const http = require('http');
  const url = require('url');
+ const cluster = require('cluster');
+ const os = require('os');
 
  const server = http.createServer((req, res) => {
 
@@ -41,9 +43,21 @@
 
  });
 
- server.listen(4001, () => {
-   console.log('Serve listening of port 4001');
- });
+ // cluster mode
+ if(cluster.isMaster) {
+   for(i = 0; i < os.cpus().length; i++) {
+     cluster.fork();
+   }
+   cluster.on('exit', (worker, code, signal) => {
+     console.log(`worker ${worker.process.pid} died`);
+     cluster.fork();
+   });
+ } else {
+  server.listen(4001, () => {
+    console.log('Serve listening of port 4001');
+  });
+ }
+ 
 
  let handlers = {};
 
